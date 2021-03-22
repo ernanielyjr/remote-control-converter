@@ -6,8 +6,12 @@
 #define IR_RECEIVE_PIN A3
 #define IR_SEND_PIN 3
 
-unsigned long inCode[] = { 0xF, 0xB, 0x7 };
-unsigned long outCode[] = { 0x39, 0x3B, 0x33 };
+#define REPEAT_DELAY 300
+
+unsigned long inCode[] = { 0xF, 0xB, 0x7 }; // Samsung TV
+unsigned long outCode[] = { 0x39, 0x3B, 0x33 }; // Samsung Home Theater
+
+#define SAMSUNG_OUT_ADDRESS 0x5343
 
 #if defined(DEBUG)
   char *buttons[] = { "MUTE", "VOL_DOWN", "VOL_UP" };
@@ -25,26 +29,26 @@ void setup() {
 }
 
 void loop() {
-  unsigned long command = 0;
-
   if (IrReceiver.decode()) {
-    command = IrReceiver.decodedIRData.command;
+    unsigned long command = IrReceiver.decodedIRData.command;
+
     #if defined(DEBUG)
+      Serial.print("input command: ");
       Serial.println(command);
     #endif
 
     for (int i = 0; i < codesCount; i++) {
       if (command == inCode[i]) {
+        IrReceiver.stop();
+        IrSender.sendSamsung(SAMSUNG_OUT_ADDRESS, outCode[i], 0);
+        IrReceiver.start();
+
         #if defined(DEBUG)
+          Serial.print("command sent: ");
           Serial.println(buttons[i]);
         #endif
 
-        IrReceiver.stop();
-        IrSender.sendSamsung(0x5343, outCode[i], 0);
-        IrReceiver.start();
-
-        command = 0;
-        delay(333);
+        delay(REPEAT_DELAY);
       }
     }
 
